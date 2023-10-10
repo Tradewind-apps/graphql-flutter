@@ -1,8 +1,9 @@
+import 'dart:core';
+
+import 'package:gql_exec/gql_exec.dart' show Request;
 import 'package:graphql/src/cache/fragment.dart';
 import 'package:graphql/src/exceptions/exceptions_next.dart';
 import "package:meta/meta.dart";
-
-import 'package:gql_exec/gql_exec.dart' show Request;
 import 'package:normalize/normalize.dart';
 
 import './data_proxy.dart';
@@ -78,10 +79,10 @@ abstract class NormalizingDataProxy extends GraphQLDataProxy {
   @protected
   late SanitizeVariables sanitizeVariables;
 
-  Map<String, dynamic>? readQuery(
+  Future<Map<String, dynamic>?> readQuery(
     Request request, {
     bool optimistic = true,
-  }) =>
+  }) async =>
       denormalizeOperation(
         // provided from cache
         read: (dataId) => readNormalized(dataId, optimistic: optimistic),
@@ -94,14 +95,14 @@ abstract class NormalizingDataProxy extends GraphQLDataProxy {
         // provided from request
         document: request.operation.document,
         operationName: request.operation.operationName,
-        variables: sanitizeVariables(request.variables)!,
+        variables: (await sanitizeVariables(request.variables)) ?? {},
         possibleTypes: possibleTypes,
       );
 
-  Map<String, dynamic>? readFragment(
+  Future<Map<String, dynamic>?> readFragment(
     FragmentRequest fragmentRequest, {
     bool optimistic = true,
-  }) =>
+  }) async =>
       denormalizeFragment(
         // provided from cache
         read: (dataId) => readNormalized(dataId, optimistic: optimistic),
@@ -115,15 +116,15 @@ abstract class NormalizingDataProxy extends GraphQLDataProxy {
         document: fragmentRequest.fragment.document,
         idFields: fragmentRequest.idFields,
         fragmentName: fragmentRequest.fragment.fragmentName,
-        variables: sanitizeVariables(fragmentRequest.variables)!,
+        variables: (await sanitizeVariables(fragmentRequest.variables)) ?? {},
         possibleTypes: possibleTypes,
       );
 
-  void writeQuery(
+  Future<void> writeQuery(
     Request request, {
     required Map<String, dynamic> data,
     bool? broadcast = true,
-  }) {
+  }) async {
     try {
       normalizeOperation(
         // provided from cache
@@ -136,7 +137,7 @@ abstract class NormalizingDataProxy extends GraphQLDataProxy {
         // provided from request
         document: request.operation.document,
         operationName: request.operation.operationName,
-        variables: sanitizeVariables(request.variables)!,
+        variables: (await sanitizeVariables(request.variables)) ?? {},
         // data
         data: data,
         possibleTypes: possibleTypes,
@@ -157,11 +158,11 @@ abstract class NormalizingDataProxy extends GraphQLDataProxy {
     }
   }
 
-  void writeFragment(
+  Future<void> writeFragment(
     FragmentRequest request, {
     required Map<String, dynamic> data,
     bool? broadcast = true,
-  }) {
+  }) async {
     try {
       normalizeFragment(
         // provided from cache
@@ -175,7 +176,7 @@ abstract class NormalizingDataProxy extends GraphQLDataProxy {
         document: request.fragment.document,
         idFields: request.idFields,
         fragmentName: request.fragment.fragmentName,
-        variables: sanitizeVariables(request.variables)!,
+        variables: (await sanitizeVariables(request.variables)) ?? {},
         // data
         data: data,
         possibleTypes: possibleTypes,

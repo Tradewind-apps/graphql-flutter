@@ -98,14 +98,14 @@ import './fragment.dart';
 /// ```
 abstract class GraphQLDataProxy {
   /// Reads a GraphQL query from the root query id.
-  Map<String, dynamic>? readQuery(Request request, {bool optimistic});
+  Future<Map<String, dynamic>?> readQuery(Request request, {bool optimistic});
 
   /// Reads a GraphQL fragment from any arbitrary id.
   ///
   /// If there is more than one fragment in the provided document
   /// then a `fragmentName` must be provided to `fragmentRequest.fragment`
   /// to select the correct fragment.
-  Map<String, dynamic>? readFragment(
+  Future<Map<String, dynamic>?> readFragment(
     FragmentRequest fragmentRequest, {
     bool optimistic,
   });

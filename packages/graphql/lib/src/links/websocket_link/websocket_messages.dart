@@ -256,9 +256,12 @@ class SubscriptionData extends GraphQLSocketMessage {
   @override
   int get hashCode => toJson().hashCode;
 
-  @override
-  bool operator ==(dynamic other) =>
-      other is SubscriptionData && jsonEncode(other) == jsonEncode(this);
+  bool operator ==(dynamic other) {
+    if (other is! SubscriptionData) return false;
+    return other.type == type &&
+        other.data == other.data &&
+        other.errors == errors;
+  }
 }
 
 class SubscriptionNext extends GraphQLSocketMessage {
@@ -279,8 +282,12 @@ class SubscriptionNext extends GraphQLSocketMessage {
   int get hashCode => toJson().hashCode;
 
   @override
-  bool operator ==(dynamic other) =>
-      other is SubscriptionNext && jsonEncode(other) == jsonEncode(this);
+  bool operator ==(dynamic other) {
+    if (other is! SubscriptionNext) return false;
+    return other.type == type &&
+        other.data == other.data &&
+        other.errors == errors;
+  }
 }
 
 /// Errors sent from the server to the client if the subscription operation was

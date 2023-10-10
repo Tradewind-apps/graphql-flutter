@@ -1,9 +1,8 @@
-import 'package:graphql/src/core/result_parser.dart';
-import 'package:test/test.dart';
-import 'package:mockito/mockito.dart';
-
-import 'package:graphql/client.dart';
 import 'package:gql/language.dart';
+import 'package:graphql/client.dart';
+import 'package:graphql/src/core/result_parser.dart';
+import 'package:mockito/mockito.dart';
+import 'package:test/test.dart';
 
 import './helpers.dart';
 
@@ -983,7 +982,8 @@ query WalletGetContent($input: WalletGetContentInput!) {
           fetchResults: false,
         ));
 
-        final result = await observableQuery.fetchResults().networkResult!;
+        final result =
+            await (await observableQuery.fetchResults()).networkResult!;
 
         verify(
           link.request(

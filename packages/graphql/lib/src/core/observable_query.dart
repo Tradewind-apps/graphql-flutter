@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:graphql/client.dart';
-import 'package:meta/meta.dart';
 
+import 'package:graphql/client.dart';
 import 'package:graphql/src/core/fetch_more.dart';
 import 'package:graphql/src/scheduler/scheduler.dart';
+import 'package:meta/meta.dart';
 
 /// Side effect to register for execution when data is received
 typedef OnData<TParsed> = FutureOr<void> Function(QueryResult<TParsed>? result);
@@ -188,12 +188,13 @@ class ObservableQuery<TParsed> {
   /// default [options.fetchPolicy], just for this request.
   ///
   /// Will [startPolling] if [options.pollInterval] is set
-  MultiSourceResult<TParsed> fetchResults({FetchPolicy? fetchPolicy}) {
+  Future<MultiSourceResult<TParsed>> fetchResults(
+      {FetchPolicy? fetchPolicy}) async {
     final fetchOptions = fetchPolicy == null
         ? options
         : options.copyWithFetchPolicy(fetchPolicy);
     final MultiSourceResult<TParsed> allResults =
-        queryManager.fetchQueryAsMultiSourceResult(queryId, fetchOptions);
+        await queryManager.fetchQueryAsMultiSourceResult(queryId, fetchOptions);
     latestResult ??= allResults.eagerResult;
 
     if (allResults.networkResult == null) {

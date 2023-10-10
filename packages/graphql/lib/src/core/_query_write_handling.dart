@@ -96,9 +96,10 @@ extension InternalQueryWriteHandling on QueryManager {
 
   /// Reread the request into the result from the cache,
   /// adding a [CacheMissException] if it fails to do so
-  void attempCacheRereadIntoResult(Request request, QueryResult? queryResult) {
+  Future<void> attempCacheRereadIntoResult(
+      Request request, QueryResult? queryResult) async {
     // normalize results if previously written
-    final rereadData = cache.readQuery(request);
+    final rereadData = await cache.readQuery(request);
     if (rereadData == null) {
       queryResult!.exception = coalesceErrors(
         exception: queryResult.exception,
