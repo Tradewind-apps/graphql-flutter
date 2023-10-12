@@ -1,7 +1,9 @@
 name: graphql_flutter
+sdkPath: .fvm/flutter_sdk
 
-ide:
-  intellij: true
+command:
+  bootstrap:
+    usePubspecOverrides: true
 
 packages:
   - packages/**
@@ -60,7 +62,3 @@ scripts:
       MELOS_TEST: true
 
   format: dart format -o write .
-
-command:
-  bootstrap:
-    usePubspecOverrides: true

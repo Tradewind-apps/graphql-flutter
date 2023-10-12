@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
-import '../graphql_operation/mutations/mutations.dart' as mutations;
 import '../graphql_operation/queries/readRepositories.dart' as queries;
 import '../helpers.dart' show withGenericHandling;
-
 // to run the example, replace <YOUR_PERSONAL_ACCESS_TOKEN> with your GitHub token in ../local.dart
 import '../local.dart';
 
@@ -183,58 +181,59 @@ class StarrableRepository extends StatelessWidget {
     /// While we could toggle between the addStar and removeStar mutations conditionally,
     /// this would discard and rebuild each associated [ObservableQuery]. The side effects would still execute,
     /// but we would not have a way to inspect the mutation results, such as with [_debugLatestResults].
-    return Mutation(
-      options: MutationOptions(
-        document: gql(mutations.addStar),
-        update: update,
-        onError: (OperationException? error) =>
-            _simpleAlert(context, error.toString()),
-        onCompleted: (dynamic resultData) =>
-            _simpleAlert(context, 'Thanks for your star!'),
-        // 'Sorry you changed your mind!',
-      ),
-      builder: (RunMutation _addStar, QueryResult? addResult) {
-        final addStar = () => _addStar({'starrableId': repository['id']},
-            optimisticResult: expectedResult(true));
-        return Mutation(
-          options: MutationOptions(
-            document: gql(mutations.removeStar),
-            update: update,
-            onError: (OperationException? error) =>
-                _simpleAlert(context, error.toString()),
-            onCompleted: (dynamic resultData) =>
-                _simpleAlert(context, 'Sorry you changed your mind!'),
-          ),
-          builder: (RunMutation _removeStar, QueryResult? removeResult) {
-            final removeStar = () => _removeStar(
-                {'starrableId': repository['id']},
-                optimisticResult: expectedResult(false));
+    return SizedBox();
+    // return Mutation(
+    //   options: MutationOptions(
+    //     document: gql(mutations.addStar),
+    //     update: update,
+    //     onError: (OperationException? error) =>
+    //         _simpleAlert(context, error.toString()),
+    //     onCompleted: (dynamic resultData) =>
+    //         _simpleAlert(context, 'Thanks for your star!'),
+    //     // 'Sorry you changed your mind!',
+    //   ),
+    //   builder: (RunMutation _addStar, QueryResult? addResult) {
+    //     final addStar = () => _addStar({'starrableId': repository['id']},
+    //         optimisticResult: expectedResult(true));
+    //     return Mutation(
+    //       options: MutationOptions(
+    //         document: gql(mutations.removeStar),
+    //         update: update,
+    //         onError: (OperationException? error) =>
+    //             _simpleAlert(context, error.toString()),
+    //         onCompleted: (dynamic resultData) =>
+    //             _simpleAlert(context, 'Sorry you changed your mind!'),
+    //       ),
+    //       builder: (RunMutation _removeStar, QueryResult? removeResult) {
+    //         final removeStar = () => _removeStar(
+    //             {'starrableId': repository['id']},
+    //             optimisticResult: expectedResult(false));
 
-            final anyLoading =
-                addResult!.isLoading || removeResult!.isLoading || optimistic;
+    //         final anyLoading =
+    //             addResult!.isLoading || removeResult!.isLoading || optimistic;
 
-            return ListTile(
-              leading: starred!
-                  ? Icon(
-                      Icons.star,
-                      color: Colors.amber,
-                    )
-                  : Icon(Icons.star_border),
-              trailing: anyLoading ? CircularProgressIndicator() : null,
-              title: Text(repository['name'] as String),
+    //         return ListTile(
+    //           leading: starred!
+    //               ? Icon(
+    //                   Icons.star,
+    //                   color: Colors.amber,
+    //                 )
+    //               : Icon(Icons.star_border),
+    //           trailing: anyLoading ? CircularProgressIndicator() : null,
+    //           title: Text(repository['name'] as String),
 
-              /// uncomment this line to see the actual mutation results
-              subtitle: _debugLatestResults(addResult, removeResult!),
-              onTap: anyLoading
-                  ? null
-                  : starred!
-                      ? removeStar
-                      : addStar,
-            );
-          },
-        );
-      },
-    );
+    //           /// uncomment this line to see the actual mutation results
+    //           subtitle: _debugLatestResults(addResult, removeResult!),
+    //           onTap: anyLoading
+    //               ? null
+    //               : starred!
+    //                   ? removeStar
+    //                   : addStar,
+    //         );
+    //       },
+    //     );
+    //   },
+    // );
   }
 
   // TODO extract these details into better docs on [Policies]

@@ -1,23 +1,20 @@
 import 'dart:async';
 
-import 'package:graphql/src/utilities/response.dart';
-import 'package:meta/meta.dart';
 import 'package:collection/collection.dart';
-
 import 'package:gql_exec/gql_exec.dart';
 import 'package:gql_link/gql_link.dart' show Link;
-
 import 'package:graphql/src/cache/cache.dart';
-import 'package:graphql/src/core/observable_query.dart';
 import 'package:graphql/src/core/_base_options.dart';
+import 'package:graphql/src/core/_query_write_handling.dart';
 import 'package:graphql/src/core/mutation_options.dart';
+import 'package:graphql/src/core/observable_query.dart';
+import 'package:graphql/src/core/policies.dart';
 import 'package:graphql/src/core/query_options.dart';
 import 'package:graphql/src/core/query_result.dart';
-import 'package:graphql/src/core/policies.dart';
 import 'package:graphql/src/exceptions.dart';
 import 'package:graphql/src/scheduler/scheduler.dart';
-
-import 'package:graphql/src/core/_query_write_handling.dart';
+import 'package:graphql/src/utilities/response.dart';
+import 'package:meta/meta.dart';
 
 bool Function(dynamic a, dynamic b) _deepEquals =
     const DeepCollectionEquality().equals;
@@ -78,23 +75,21 @@ class QueryManager {
         options: options,
       );
     } else if (shouldRespondEagerlyFromCache(options.fetchPolicy)) {
-      final cacheResult = cache.readQuery(
+      final cacheResult = await cache.readQuery(
         request,
         optimistic: options.policies.mergeOptimisticData,
       );
-      if (cacheResult != null) {
-        yield QueryResult(
-          options: options,
-          source: QueryResultSource.cache,
-          data: cacheResult,
-        );
-      }
+      yield QueryResult(
+        options: options,
+        source: QueryResultSource.cache,
+        data: cacheResult,
+      );
     }
 
     try {
       yield* link
           .request(request)
-          .map((response) {
+          .asyncMap((response) async {
             QueryResult<TParsed>? queryResult;
             bool rereadFromCache = false;
             try {
@@ -125,7 +120,7 @@ class QueryManager {
 
             if (rereadFromCache) {
               // normalize results if previously written
-              attempCacheRereadIntoResult(request, queryResult);
+              await attempCacheRereadIntoResult(request, queryResult);
             }
 
             return queryResult;
@@ -154,7 +149,7 @@ class QueryManager {
 
   Future<QueryResult<TParsed>> query<TParsed>(
       QueryOptions<TParsed> options) async {
-    final results = fetchQueryAsMultiSourceResult(_oneOffOpId, options);
+    final results = await fetchQueryAsMultiSourceResult(_oneOffOpId, options);
     final eagerResult = results.eagerResult;
     final networkResult = results.networkResult;
     if (options.fetchPolicy != FetchPolicy.cacheAndNetwork ||
@@ -199,20 +194,20 @@ class QueryManager {
     BaseOptions<TParsed> options,
   ) async {
     final MultiSourceResult<TParsed> allResults =
-        fetchQueryAsMultiSourceResult(queryId, options);
+        await fetchQueryAsMultiSourceResult(queryId, options);
     return allResults.networkResult ?? allResults.eagerResult;
   }
 
   /// Wrap both the `eagerResult` and `networkResult` future in a `MultiSourceResult`
   /// if the cache policy precludes a network request, `networkResult` will be `null`
-  MultiSourceResult<TParsed> fetchQueryAsMultiSourceResult<TParsed>(
+  Future<MultiSourceResult<TParsed>> fetchQueryAsMultiSourceResult<TParsed>(
     String queryId,
     BaseOptions<TParsed> options,
-  ) {
+  ) async {
     // create a new request to execute
     final request = options.asRequest;
 
-    final QueryResult<TParsed> eagerResult = _resolveQueryEagerly(
+    final QueryResult<TParsed> eagerResult = await _resolveQueryEagerly(
       request,
       queryId,
       options,
@@ -289,16 +284,16 @@ class QueryManager {
 
   /// Add an eager cache response to the stream if possible,
   /// based on `fetchPolicy` and `optimisticResults`
-  QueryResult<TParsed> _resolveQueryEagerly<TParsed>(
+  Future<QueryResult<TParsed>> _resolveQueryEagerly<TParsed>(
     Request request,
     String queryId,
     BaseOptions<TParsed> options,
-  ) {
+  ) async {
     QueryResult<TParsed> queryResult = QueryResult.loading(options: options);
 
     try {
       if (options.optimisticResult != null) {
-        queryResult = _getOptimisticQueryResult(
+        queryResult = await _getOptimisticQueryResult(
           request,
           queryId: queryId,
           optimisticResult: options.optimisticResult,
@@ -310,15 +305,13 @@ class QueryManager {
       // we attempt to resolve the from the cache
       if (shouldRespondEagerlyFromCache(options.fetchPolicy) &&
           !queryResult.isOptimistic) {
-        final data = cache.readQuery(request, optimistic: false);
+        final data = await cache.readQuery(request, optimistic: false);
         // we only push an eager query with data
-        if (data != null) {
-          queryResult = QueryResult(
-            options: options,
-            data: data,
-            source: QueryResultSource.cache,
-          );
-        }
+        queryResult = QueryResult(
+          options: options,
+          data: data,
+          source: QueryResultSource.cache,
+        );
 
         if (options.fetchPolicy == FetchPolicy.cacheOnly &&
             queryResult.isLoading) {
@@ -411,12 +404,12 @@ class QueryManager {
   }
 
   /// Create an optimstic result for the query specified by `queryId`, if it exists
-  QueryResult<TParsed> _getOptimisticQueryResult<TParsed>(
+  Future<QueryResult<TParsed>> _getOptimisticQueryResult<TParsed>(
     Request request, {
     required String queryId,
     required Object? optimisticResult,
     required BaseOptions<TParsed> options,
-  }) {
+  }) async {
     QueryResult<TParsed> queryResult = QueryResult(
       options: options,
       source: QueryResultSource.optimisticResult,
@@ -433,7 +426,7 @@ class QueryManager {
     );
 
     if (!queryResult.hasException) {
-      queryResult.data = cache.readQuery(
+      queryResult.data = await cache.readQuery(
         request,
         optimistic: true,
       );
@@ -454,10 +447,10 @@ class QueryManager {
   /// **Note on internal implementation details**:
   /// There is sometimes confusion on when this is called, but rebroadcasts are requested
   /// from every [addQueryResult] where `result.isNotLoading` as an [OnData] callback from [ObservableQuery].
-  bool maybeRebroadcastQueries({
+  Future<bool> maybeRebroadcastQueries({
     ObservableQuery<Object?>? exclude,
     bool force = false,
-  }) {
+  }) async {
     if (rebroadcastLocked && !force) {
       return false;
     }
@@ -470,7 +463,7 @@ class QueryManager {
 
     for (var query in queries.values) {
       if (query != exclude && query.isRebroadcastSafe) {
-        final cachedData = cache.readQuery(
+        final cachedData = await cache.readQuery(
           query.options.asRequest,
           optimistic: query.options.policies.mergeOptimisticData,
         );

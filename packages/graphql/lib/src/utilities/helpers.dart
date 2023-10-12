@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:core';
 
 import 'package:gql/ast.dart';
 import 'package:gql/language.dart';
+import 'package:graphql/src/utilities/isolate_worker.dart';
 import 'package:http/http.dart' show MultipartFile;
 import 'package:normalize/utils.dart';
 
@@ -70,7 +72,17 @@ Object? sanitizeFilesForCache(dynamic object) {
   return object.toJson();
 }
 
-typedef SanitizeVariables = Map<String, dynamic>? Function(
+Map<String, dynamic> linkedMapToDartMap(dynamic value) {
+  try {
+    return (value as Map?)
+            ?.map((key, value) => MapEntry(key.toString(), value)) ??
+        {};
+  } catch (_) {
+    return {};
+  }
+}
+
+typedef SanitizeVariables = Future<Map<String, dynamic>?> Function(
   Map<String, dynamic> variables,
 );
 
@@ -80,13 +92,12 @@ typedef SanitizeVariables = Map<String, dynamic>? Function(
 /// which convets [MultipartFile]s to a string representation containing hashCode)
 SanitizeVariables variableSanitizer(
   Object? Function(Object?)? sanitizeVariables,
-) =>
-    // TODO use more efficient traversal method
-    sanitizeVariables == null
-        ? (v) => v
-        : (variables) => jsonDecode(
-              jsonEncode(
-                variables,
-                toEncodable: sanitizeVariables,
-              ),
-            ) as Map<String, dynamic>;
+) {
+  if (sanitizeVariables == null) return (Object? v) async => null;
+
+  return (Object? v) async {
+    final encoded = await IsolateWorker.encodeJson(v);
+    final decoded = await IsolateWorker.decodeJson(encoded);
+    return linkedMapToDartMap(decoded);
+  };
+}
