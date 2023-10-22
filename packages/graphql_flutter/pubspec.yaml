@@ -8,7 +8,11 @@ issue_tracker: https://github.com/zino-hofmann/graphql-flutter/issues
 # publish_to: 'none'
 
 dependencies:
-  graphql: ^5.2.0-beta.4
+  graphql:
+    git:
+      url: https://github.com/Tradewind-apps/graphql-flutter
+      ref: pb/upgrade-dependencies
+      path: packages/graphql_flutter
   gql_exec: ^1.0.0
   flutter:
     sdk: flutter
