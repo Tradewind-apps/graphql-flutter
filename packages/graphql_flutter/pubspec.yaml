@@ -12,7 +12,7 @@ dependencies:
     git:
       url: https://github.com/Tradewind-apps/graphql-flutter
       ref: main
-      path: packages/graphql_flutter
+      path: packages/graphql
   gql_exec: ^1.0.0
   flutter:
     sdk: flutter
