@@ -10,8 +10,9 @@ import 'package:graphql/src/utilities/platform.dart';
 import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:stream_channel/stream_channel.dart';
+import 'package:uuid/data.dart';
+import 'package:uuid/rng.dart';
 import 'package:uuid/uuid.dart';
-import 'package:uuid/uuid_util.dart';
 import 'package:web_socket_channel/status.dart' as ws_status;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -24,9 +25,8 @@ typedef WebSocketConnect = FutureOr<WebSocketChannel> Function(
   Uri uri,
   Iterable<String>? protocols,
 );
-
 // create uuid generator
-final _uuid = Uuid(options: {'grng': UuidUtil.cryptoRNG});
+final _uuid = Uuid(goptions: GlobalOptions(CryptoRNG()));
 
 class SubscriptionListener {
   Function callback;
