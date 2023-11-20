@@ -26,7 +26,7 @@ typedef WebSocketConnect = FutureOr<WebSocketChannel> Function(
   Iterable<String>? protocols,
 );
 // create uuid generator
-final _uuid = Uuid(goptions: GlobalOptions(CryptoRNG()));
+final _uuid = Uuid();
 
 class SubscriptionListener {
   Function callback;
@@ -471,11 +471,8 @@ class SocketClient {
     final Request payload,
     final bool waitForConnection,
   ) {
-    final String id = _uuid.v4(
-      options: {
-        'random': randomBytesForUuid,
-      },
-    ).toString();
+    final String id =
+        _uuid.v4(config: V4Options(randomBytesForUuid, MathRNG())).toString();
     final StreamController<Response> response = StreamController<Response>();
     StreamSubscription<SocketConnectionState>? sub;
     final bool addTimeout =
